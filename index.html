@@ -1,0 +1,116 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Countdown Timer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: black;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      flex-direction: column;
+      text-align: center;
+    }
+
+    #timer {
+      font-family: 'Poppins', sans-serif; /* Modern and sleek font for numbers */
+      font-size: 8rem;
+      margin-bottom: 20px;
+    }
+
+    .input-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    input[type="text"] {
+      padding: 15px;
+      font-size: 1rem;
+      text-align: center;
+      margin-bottom: 15px;
+      border: 1px solid white;
+      background-color: black;
+      color: white;
+      outline: none;
+      border-radius: 39px;
+      width: 300px;
+    }
+
+    button {
+      padding: 7.5px 15px;
+      font-size: 1rem;
+      background-color: white;
+      color: black;
+      border: none;
+      border-radius: 39px;
+      cursor: pointer;
+      transition: 0.3s;
+      margin-top: 10px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    button:hover {
+      background-color: gray;
+    }
+
+   
+    #reveal-button {
+ display: none;
+ margin-top: 20px;
+ margin-left: auto;
+ margin-right: auto;
+ width: auto; /* Ensures the button doesn't stretch unnaturally */
+ font-family: 'Poppins', sans-serif;
+}
+
+    /* Mobile responsiveness */
+    @media (max-width: 600px) {
+      #timer {
+        font-size: 4rem; /* Smaller timer font for mobile */
+      }
+
+      input[type="text"] {
+        font-size: 1.05rem;
+        padding: 10px;
+        width: 80%;
+      }
+
+      button {
+        font-size: 1rem;
+        padding: 5px 10px;
+        font-family: 'Poppins', sans-serif;
+      }
+      #extravaganza-text {
+   font-size: 1.5rem;
+
+ }
+    }
+   
+
+  </style>
+</head>
+<body>
+  <div id="timer-container">
+   <h2 id="extravaganza-text" style="font-size: 2rem; margin-bottom: 20px;">Time left for the extravaganza:</h2>
+    <div id="timer">00:00:00:00</div>
+    <div class="input-container">
+      <input type="text" id="earlyAccessCode" placeholder="Enter Early Access Code">
+      <button onclick="checkCode()">Submit Code</button>
+    </div>
+    <button id="reveal-button" onclick="redirectToSite()">Proceed to WealthWire</button>
+  </div>
+
+  <script>
+  function _0x2d4c(){const _0x43cb68=['floor','39mheyyh','reveal-button','1536350cVmDiH','timer-container','value','location','add','classList','https://wealthwire.vercel.app','style','1099206VWcjjr','2832iWcvXl','3514476HdBuEf','getTime','hidden','420420zFDKOU','701548cTbHni','41530JyQTbe','href','getElementById','Invalid\x20Code.\x20Try\x20again.','Oct\x2029,\x202024\x2001:25:59','6391SSBwib','innerHTML','earlyAccessCode','display:\x20block;\x20margin-top:\x2020px;\x20margin-left:\x20auto;\x20margin-right:\x20auto;','cssText'];_0x2d4c=function(){return _0x43cb68;};return _0x2d4c();}const _0x2e1785=_0x48da;function _0x48da(_0xe12fdc,_0x51609e){const _0x2d4c58=_0x2d4c();return _0x48da=function(_0x48da9f,_0x1374bc){_0x48da9f=_0x48da9f-0xf6;let _0x4eff23=_0x2d4c58[_0x48da9f];return _0x4eff23;},_0x48da(_0xe12fdc,_0x51609e);}(function(_0x47fd50,_0x2a5f20){const _0x2b812b=_0x48da,_0x565ec5=_0x47fd50();while(!![]){try{const _0x30f1f1=-parseInt(_0x2b812b(0x104))/0x1+parseInt(_0x2b812b(0x106))/0x2*(parseInt(_0x2b812b(0x111))/0x3)+-parseInt(_0x2b812b(0x105))/0x4+parseInt(_0x2b812b(0xf7))/0x5+parseInt(_0x2b812b(0x101))/0x6+-parseInt(_0x2b812b(0x10b))/0x7*(parseInt(_0x2b812b(0x100))/0x8)+parseInt(_0x2b812b(0xff))/0x9;if(_0x30f1f1===_0x2a5f20)break;else _0x565ec5['push'](_0x565ec5['shift']());}catch(_0x2479c1){_0x565ec5['push'](_0x565ec5['shift']());}}}(_0x2d4c,0x59606));let countdownDate=new Date(_0x2e1785(0x10a))[_0x2e1785(0x102)]();const timerInterval=setInterval(function(){const _0x3f827e=_0x2e1785,_0x319bb3=new Date()[_0x3f827e(0x102)](),_0x401114=countdownDate-_0x319bb3,_0x146a4a=Math['floor'](_0x401114/(0x3e8*0x3c*0x3c*0x18)),_0x280cfd=Math[_0x3f827e(0x110)](_0x401114%(0x3e8*0x3c*0x3c*0x18)/(0x3e8*0x3c*0x3c)),_0x343588=Math[_0x3f827e(0x110)](_0x401114%(0x3e8*0x3c*0x3c)/(0x3e8*0x3c)),_0x24bce1=Math[_0x3f827e(0x110)](_0x401114%(0x3e8*0x3c)/0x3e8);document[_0x3f827e(0x108)]('timer')[_0x3f827e(0x10c)]=_0x146a4a+':'+_0x280cfd+':'+_0x343588+':'+_0x24bce1,_0x401114<0x0&&(clearInterval(timerInterval),document['getElementById'](_0x3f827e(0xf8))['classList'][_0x3f827e(0xfb)](_0x3f827e(0x103)),window[_0x3f827e(0xfa)][_0x3f827e(0x107)]=_0x3f827e(0xfd));},0x3e8);function checkCode(){const _0x36e82f=_0x2e1785,_0x662e8=document['getElementById'](_0x36e82f(0x10d))[_0x36e82f(0xf9)],_0x145173='skibidirizzler69';_0x662e8===_0x145173?(document[_0x36e82f(0x108)](_0x36e82f(0xf8))[_0x36e82f(0xfc)][_0x36e82f(0xfb)](_0x36e82f(0x103)),window[_0x36e82f(0xfa)][_0x36e82f(0x107)]=_0x36e82f(0xfd)):alert(_0x36e82f(0x109)),document[_0x36e82f(0x108)](_0x36e82f(0xf6))[_0x36e82f(0xfe)][_0x36e82f(0x10f)]=_0x36e82f(0x10e);}
+    </script>
+</body>
+</html>
