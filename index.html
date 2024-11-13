@@ -65,7 +65,7 @@
 
    
     #reveal-button {
- display: none;
+ display: auto;
  margin-top: 20px;
  margin-left: auto;
  margin-right: auto;
@@ -107,10 +107,8 @@
 <body>
   <div id="timer-container">
    <h2 id="extravaganza-text" style="font-size: 2rem; margin-bottom: 20px;">Time left for the extravaganza:</h2>
-    <div id="timer">00:00:00:00</div>
+    <div id="timer">Launched!</div>
     <div class="input-container">
-      <input type="text" id="earlyAccessCode" placeholder="Enter Early Access Code">
-      <button onclick="checkCode()">Submit Code</button>
     </div>
     <button id="reveal-button" class="hidden" onclick="redirectToSite()">Proceed to WealthWire</button>
   </div>
@@ -120,49 +118,10 @@
 </footer>
  <script>
   
-    
-    // Set the countdown date (target date and time)
-let countdownDate = new Date("Nov 8, 2024 09:25:59").getTime();
-
-// Update the countdown every second
-const timerInterval = setInterval(function () {
-    const now = new Date().getTime(); // Get current time
-    const timeRemaining = countdownDate - now; // Calculate remaining time
-
-    // Time calculations for days, hours, minutes, and seconds
-    const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
-
-    // Display the result in the timer element
-    document.getElementById("timer").innerHTML = days + ":" + hours + ":" + minutes + ":" + seconds;
-
-    // If the countdown is over, stop the timer and reveal the button
-    if (timeRemaining < 0) {
-        clearInterval(timerInterval);
-        document.getElementById("timer").innerHTML = "00:00:00:00"; // Timer shows zero when finished
-        document.getElementById("reveal-button").classList.remove("hidden"); // Show the reveal button
-    }
-}, 1000);
-
-// Function to check the early access code
-function checkCode() {
-    const enteredCode = document.getElementById("earlyAccessCode").value;
-    const validCode = "skibidirizzler69"; // Correct code
-
-    if (enteredCode === validCode) {
-        // If the code is correct, show the reveal button
-        document.getElementById("reveal-button").classList.remove("hidden");
-        document.getElementById("reveal-button").style.cssText = "display: block; margin-top: 20px; margin-left: auto; margin-right: auto;";
-    } else {
-        alert("Invalid Code. Try again."); // Alert on incorrect code
-    }
-}
 
 // Function to redirect to the WealthWire site when button is clicked
 function redirectToSite() {
-    window.location.href = "https://extravaganza101.vercel.app/"; // Redirect to target site
+    window.location.href = "https://wealthwire.vercel.app/"; // Redirect to target site
 }
 
  </script>
