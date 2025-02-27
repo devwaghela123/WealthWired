@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Road Rage Lite</title>
   <style>
     /* Global Styles */
@@ -22,6 +22,7 @@
     #scoreBoard {
       font-size: 1.5rem;
       margin-bottom: 10px;
+      text-align: center;
     }
     /* Game Container */
     #gameContainer {
@@ -31,7 +32,6 @@
       height: 80vh;
       background: url('image (22).png') no-repeat center top;
       background-size: 100% auto;
-      /* repeat vertically if needed */
       background-repeat: repeat-y;
       overflow: hidden;
       border: 3px solid #fff;
@@ -40,11 +40,10 @@
     /* Car Style */
     .car {
       position: absolute;
-      width: 50px;
-      height: 100px;
+      width: 70px;
+      height: 140px;
       bottom: 10px;
       left: 50%;
-      /* Center the car horizontally and rotate it */
       transform: translateX(-50%) rotate(90deg);
       background: url('hector.png') no-repeat center;
       background-size: contain;
@@ -64,8 +63,8 @@
     .angry {
       background: #f00;
     }
-    /* Game Over Overlay */
-    #gameOverOverlay {
+    /* Overlay Styles */
+    .overlay {
       position: absolute;
       top: 0;
       left: 0;
@@ -95,32 +94,48 @@
   </style>
 </head>
 <body>
-  <div id="scoreBoard">Score: 0</div>
+  <div id="scoreBoard">
+    Points: 0 | Hits: 0
+  </div>
   <div id="gameContainer">
     <div class="car" id="car"></div>
-    <!-- Items will be dynamically created -->
-    <div id="gameOverOverlay">
-      <div>You lost, now order cheesecake for her</div>
+    <!-- Overlay for Win/Lose -->
+    <div id="gameOverlay" class="overlay">
+      <div id="overlayText"></div>
       <button id="playAgain">Play Again</button>
     </div>
   </div>
+  
+  <!-- Audio placeholders -->
+  <audio id="happySound">
+    <!-- Add your bonus sound file here, e.g. <source src="happy.mp3" type="audio/mpeg"> -->
+  </audio>
+  <audio id="angrySound">
+    <!-- Add your obstacle sound file here, e.g. <source src="angry.mp3" type="audio/mpeg"> -->
+  </audio>
+
   <script>
     const gameContainer = document.getElementById('gameContainer');
     const car = document.getElementById('car');
     const scoreBoard = document.getElementById('scoreBoard');
-    const gameOverOverlay = document.getElementById('gameOverOverlay');
+    const gameOverlay = document.getElementById('gameOverlay');
+    const overlayText = document.getElementById('overlayText');
     const playAgainBtn = document.getElementById('playAgain');
+    const happySound = document.getElementById('happySound');
+    const angrySound = document.getElementById('angrySound');
 
     let containerWidth = gameContainer.clientWidth;
     let containerHeight = gameContainer.clientHeight;
     let score = 0;
+    let hits = 0;
     let gameSpeed = 2;
     let gameInterval;
+    let bgPos = 0;
     let carPos = { x: car.offsetLeft, y: car.offsetTop };
     let moveLeft = false, moveRight = false;
-    let items = []; // array to hold bonus & obstacle items
+    let items = []; // holds bonus & obstacle items
 
-    // On resize, update container dimensions.
+    // Update container dimensions on window resize
     window.addEventListener('resize', () => {
       containerWidth = gameContainer.clientWidth;
       containerHeight = gameContainer.clientHeight;
@@ -160,6 +175,10 @@
 
     // Update game state
     function updateGame() {
+      // Move background to simulate forward movement
+      bgPos += gameSpeed;
+      gameContainer.style.backgroundPosition = `center ${bgPos}px`;
+
       // Update car position based on input
       if (moveLeft) {
         carPos.x -= 5;
@@ -187,9 +206,19 @@
         // Collision detection
         if (isColliding(car, itemObj.element)) {
           if (itemObj.type === 'happy') {
-            score += 1;
+            score++;
+            // Play bonus sound
+            if(happySound) {
+              happySound.currentTime = 0;
+              happySound.play();
+            }
           } else if (itemObj.type === 'angry') {
-            score -= 1;
+            hits++;
+            // Play obstacle sound
+            if(angrySound) {
+              angrySound.currentTime = 0;
+              angrySound.play();
+            }
           }
           // Reset the collided item
           itemObj.y = -40;
@@ -199,11 +228,16 @@
         }
       });
 
-      scoreBoard.innerText = 'Score: ' + score;
+      // Update scoreboard
+      scoreBoard.innerText = `Points: ${score} | Hits: ${hits}`;
 
-      // Lose condition: score falls below -5
-      if (score < -5) {
-        endGame();
+      // Win condition: score reaches 10
+      if (score >= 10) {
+        endGame('win');
+      }
+      // Lose condition: hits exceed 5
+      if (hits > 5) {
+        endGame('lose');
       }
     }
 
@@ -219,17 +253,23 @@
       );
     }
 
-    function endGame() {
+    function endGame(result) {
       clearInterval(gameInterval);
-      gameOverOverlay.style.display = 'flex';
+      if(result === 'win'){
+        overlayText.innerText = 'You won, congrats!';
+      } else {
+        overlayText.innerText = 'You lost, now order cheesecake for her';
+      }
+      gameOverlay.style.display = 'flex';
     }
 
     function resetGame() {
       score = 0;
+      hits = 0;
       carPos = { x: (containerWidth - car.clientWidth) / 2, y: carPos.y };
       car.style.left = carPos.x + 'px';
       spawnItems();
-      gameOverOverlay.style.display = 'none';
+      gameOverlay.style.display = 'none';
       gameInterval = setInterval(updateGame, 20);
     }
 
