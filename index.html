@@ -1,129 +1,244 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Countdown Timer</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <title>Road Rage Lite</title>
   <style>
+    /* Global Styles */
     body {
-      font-family: 'Poppins', sans-serif;
-      background-color: black;
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
       margin: 0;
-      flex-direction: column;
-      text-align: center;
-    }
-
-    #timer {
-      font-family: 'Poppins', sans-serif; /* Modern and sleek font for numbers */
-      font-size: 8rem;
-      margin-bottom: 20px;
-    }
-
-    .input-container {
+      background: #1a1a1a;
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
+      height: 100vh;
     }
-
-    input[type="text"] {
-      padding: 15px;
-      font-size: 1rem;
+    #scoreBoard {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+    }
+    /* Game Container */
+    #gameContainer {
+      position: relative;
+      width: 400px;
+      height: 600px;
+      background: #333;
+      overflow: hidden;
+      border: 3px solid #fff;
+    }
+    /* Car Style */
+    .car {
+      position: absolute;
+      width: 50px;
+      height: 100px;
+      background: #0f0; /* Green - can change later */
+      bottom: 10px;
+      left: 175px;
+      border-radius: 5px;
+    }
+    /* Item Base Style */
+    .item {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-radius: 5px;
+    }
+    /* Happy (Bonus) - Yellow Box */
+    .happy {
+      background: #ff0;
+    }
+    /* Angry (Obstacle) - Red Box */
+    .angry {
+      background: #f00;
+    }
+    /* Game Over Overlay */
+    #gameOverOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
       text-align: center;
-      margin-bottom: 15px;
-      border: 1px solid white;
-      background-color: black;
-      color: white;
-      outline: none;
-      border-radius: 39px;
-      width: 300px;
+      display: none;
     }
-
-    button {
-      padding: 7.5px 15px;
+    #playAgain {
+      margin-top: 20px;
+      padding: 10px 20px;
       font-size: 1rem;
-      background-color: white;
-      color: black;
       border: none;
-      border-radius: 39px;
+      background: #06c;
+      color: #fff;
+      border-radius: 5px;
       cursor: pointer;
-      transition: 0.3s;
-      margin-top: 10px;
-      font-family: 'Poppins', sans-serif;
-      margin-bottom: 1.5rem;
     }
-
-    button:hover {
-      background-color: gray;
-    }
-
-   
-    #reveal-button {
- display: auto;
- margin-top: 20px;
- margin-left: auto;
- margin-right: auto;
- width: auto; /* Ensures the button doesn't stretch unnaturally */
- font-family: 'Poppins', sans-serif;
- margin-bottom: 1.5rem;
-}
-
-    /* Mobile responsiveness */
-    @media (max-width: 600px) {
-      #timer {
-        font-size: 4rem; /* Smaller timer font for mobile */
-      }
-
-      input[type="text"] {
-        font-size: 1.05rem;
-        padding: 10px;
-        width: 80%;
-      }
-
-      button {
-        font-size: 1rem;
-        padding: 5px 10px;
-        font-family: 'Poppins', sans-serif;
-        margin-bottom: 1.5rem;
-      }
-      #extravaganza-text {
-   font-size: 1.5rem;
-
- }
-    }
-   
-  .email{
-    color: beige;
-  }
-
   </style>
 </head>
 <body>
-  <div id="timer-container">
-   <h2 id="extravaganza-text" style="font-size: 2rem; margin-bottom: 20px;">Time left for the extravaganza:</h2>
-    <div id="timer">Launched!</div>
-    <div class="input-container">
+  <div id="scoreBoard">Score: 0</div>
+  <div id="gameContainer">
+    <div class="car" id="car"></div>
+    <!-- Items will be dynamically created -->
+    <div id="gameOverOverlay">
+      <div>You lost, now order cheesecake for her</div>
+      <button id="playAgain">Play Again</button>
     </div>
-    <button id="reveal-button" class="hidden" onclick="redirectToSite()">Proceed to WealthWire</button>
   </div>
-<footer>
-  Contact?
-  <a class="email" href="mailto:waghelawealthworks@gmail.com ?subject=Subject%20Here&body=Body%20content%20here">wealthwire@gmail.com</a>
-</footer>
- <script>
-  
+  <script>
+    const gameContainer = document.getElementById('gameContainer');
+    const car = document.getElementById('car');
+    const scoreBoard = document.getElementById('scoreBoard');
+    const gameOverOverlay = document.getElementById('gameOverOverlay');
+    const playAgainBtn = document.getElementById('playAgain');
 
-// Function to redirect to the WealthWire site when button is clicked
-function redirectToSite() {
-    window.location.href = "https://wealthwire.vercel.app/"; // Redirect to target site
-}
+    const containerWidth = gameContainer.clientWidth;
+    const containerHeight = gameContainer.clientHeight;
+    let score = 0;
+    let gameSpeed = 2;
+    let gameInterval;
+    let carPos = { x: car.offsetLeft, y: car.offsetTop };
+    let moveLeft = false, moveRight = false;
+    let items = []; // array to hold bonus & obstacle items
 
- </script>
+    // Create an item (happy or angry) once and reuse the style
+    function createItem(type) {
+      const item = document.createElement('div');
+      item.classList.add('item');
+      if (type === 'happy') {
+        item.classList.add('happy');
+      } else if (type === 'angry') {
+        item.classList.add('angry');
+      }
+      const x = Math.random() * (containerWidth - 40);
+      const y = -40;
+      item.style.left = x + 'px';
+      item.style.top = y + 'px';
+      gameContainer.appendChild(item);
+      return { element: item, type: type, x: x, y: y, speed: gameSpeed };
+    }
+
+    // Spawn a few items on the screen
+    function spawnItems() {
+      // Clean up previous items
+      items.forEach(itemObj => {
+        if (itemObj.element.parentNode === gameContainer) {
+          gameContainer.removeChild(itemObj.element);
+        }
+      });
+      items = [];
+      for (let i = 0; i < 5; i++) {
+        // Randomly assign type (happy bonus or angry obstacle)
+        const type = Math.random() > 0.5 ? 'happy' : 'angry';
+        items.push(createItem(type));
+      }
+    }
+
+    // Update game state
+    function updateGame() {
+      // Update car position based on input
+      if (moveLeft) {
+        carPos.x -= 5;
+        if (carPos.x < 0) carPos.x = 0;
+      }
+      if (moveRight) {
+        carPos.x += 5;
+        if (carPos.x > containerWidth - car.clientWidth) {
+          carPos.x = containerWidth - car.clientWidth;
+        }
+      }
+      car.style.left = carPos.x + 'px';
+
+      // Update items' positions and check for collisions
+      items.forEach(itemObj => {
+        itemObj.y += itemObj.speed;
+        if (itemObj.y > containerHeight) {
+          // Recycle the item to the top with a new random horizontal position
+          itemObj.y = -40;
+          itemObj.x = Math.random() * (containerWidth - 40);
+          itemObj.element.style.left = itemObj.x + 'px';
+        }
+        itemObj.element.style.top = itemObj.y + 'px';
+
+        // Check collision with car
+        if (isColliding(car, itemObj.element)) {
+          if (itemObj.type === 'happy') {
+            score += 1;
+          } else if (itemObj.type === 'angry') {
+            score -= 1;
+          }
+          // Reset item after collision
+          itemObj.y = -40;
+          itemObj.x = Math.random() * (containerWidth - 40);
+          itemObj.element.style.left = itemObj.x + 'px';
+          itemObj.element.style.top = itemObj.y + 'px';
+        }
+      });
+
+      scoreBoard.innerText = 'Score: ' + score;
+
+      // Lose condition: score falls below -5
+      if (score < -5) {
+        endGame();
+      }
+    }
+
+    // Basic bounding box collision detection
+    function isColliding(a, b) {
+      const aRect = a.getBoundingClientRect();
+      const bRect = b.getBoundingClientRect();
+      return !(
+        aRect.top > bRect.bottom ||
+        aRect.bottom < bRect.top ||
+        aRect.right < bRect.left ||
+        aRect.left > bRect.right
+      );
+    }
+
+    function endGame() {
+      clearInterval(gameInterval);
+      gameOverOverlay.style.display = 'flex';
+    }
+
+    function resetGame() {
+      score = 0;
+      carPos = { x: (containerWidth - car.clientWidth) / 2, y: carPos.y };
+      car.style.left = carPos.x + 'px';
+      spawnItems();
+      gameOverOverlay.style.display = 'none';
+      gameInterval = setInterval(updateGame, 20);
+    }
+
+    // Keyboard controls for left/right movement
+    document.addEventListener('keydown', (e) => {
+      if (e.key === "ArrowLeft") {
+        moveLeft = true;
+      }
+      if (e.key === "ArrowRight") {
+        moveRight = true;
+      }
+    });
+    document.addEventListener('keyup', (e) => {
+      if (e.key === "ArrowLeft") {
+        moveLeft = false;
+      }
+      if (e.key === "ArrowRight") {
+        moveRight = false;
+      }
+    });
+
+    playAgainBtn.addEventListener('click', resetGame);
+
+    // Initialize game
+    spawnItems();
+    gameInterval = setInterval(updateGame, 20);
+  </script>
 </body>
 </html>
