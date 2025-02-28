@@ -43,19 +43,27 @@
       width: 110px;
       height: 220px;
       bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
+      /* We'll position it using left based on its center */
       background: url('meetcar.png') no-repeat center;
       background-size: contain;
     }
     /* Item Base Style */
     .item {
       position: absolute;
-      width: 40px;
-      height: 40px;
-      /* We'll set the background image dynamically */
+      width: 60px;
+      height: 60px;
       background-size: contain;
       background-repeat: no-repeat;
+    }
+    /* Particle effect for bonus hit */
+    .particle {
+      position: absolute;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #ff0;
+      opacity: 1;
+      transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+      pointer-events: none;
     }
     /* Overlay Styles */
     .overlay {
@@ -152,28 +160,41 @@
     let gameSpeed = 2;
     let gameInterval;
     let bgPos = 0;
-    let carPos = { x: car.offsetLeft, y: car.offsetTop };
+    // Instead of carPos.x representing left, we track carCenter.
+    let carCenter = containerWidth / 2;
+    // Movement flags
     let moveLeft = false, moveRight = false;
-    let items = []; // Array to hold bonus & obstacle items
+    let items = []; // Holds bonus & obstacle items
+
+    // Set initial car position based on carCenter
+    function updateCarPosition() {
+      const carWidth = car.clientWidth;
+      car.style.left = (carCenter - carWidth / 2) + 'px';
+    }
+
+    updateCarPosition();
 
     // Update container dimensions on resize
     window.addEventListener('resize', () => {
       containerWidth = gameContainer.clientWidth;
       containerHeight = gameContainer.clientHeight;
+      // Recalculate car center bounds on resize
+      carCenter = Math.min(Math.max(carCenter, car.clientWidth/2), containerWidth - car.clientWidth/2);
+      updateCarPosition();
     });
 
-    // Utility to check if two items overlap (used for item spawning)
+    // Utility to check if two items overlap (for spawning)
     function isOverlapping(newX, newY, existingItem) {
-      const buffer = 5; // extra gap between items
+      const buffer = 5; // extra gap
       return !(
-        newX + 40 + buffer < existingItem.x ||
-        newX > existingItem.x + 40 + buffer ||
-        newY + 40 + buffer < existingItem.y ||
-        newY > existingItem.y + 40 + buffer
+        newX + 60 + buffer < existingItem.x ||
+        newX > existingItem.x + 60 + buffer ||
+        newY + 60 + buffer < existingItem.y ||
+        newY > existingItem.y + 60 + buffer
       );
     }
 
-    // Create an item (happy or angry) ensuring no overlap with existing items
+    // Create an item (happy or angry) ensuring no overlap
     function createItem(type) {
       const item = document.createElement('div');
       item.classList.add('item');
@@ -183,13 +204,11 @@
         item.style.backgroundImage = "url('nirviangry.png')";
       }
       let x, y;
-      // Try random positions until there's no overlap with other items
       let attempts = 0;
       do {
-        x = Math.random() * (containerWidth - 40);
-        y = -40;
+        x = Math.random() * (containerWidth - 60);
+        y = -60; // start above view
         attempts++;
-        // Avoid infinite loop; if too many attempts, break out.
         if (attempts > 10) break;
       } while (items.some(existing => isOverlapping(x, y, existing)));
       item.style.left = x + 'px';
@@ -198,19 +217,36 @@
       return { element: item, type: type, x: x, y: y, speed: gameSpeed };
     }
 
-    // Spawn initial items (5 items total)
+    // Spawn initial items (3 items for less clutter)
     function spawnItems() {
-      // Remove old items
       items.forEach(itemObj => {
         if (itemObj.element.parentNode === gameContainer) {
           gameContainer.removeChild(itemObj.element);
         }
       });
       items = [];
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 3; i++) {
         const type = Math.random() > 0.5 ? 'happy' : 'angry';
         items.push(createItem(type));
       }
+    }
+
+    // Create a "particle" effect for bonus hit
+    function createParticle(x, y) {
+      const particle = document.createElement('div');
+      particle.classList.add('particle');
+      particle.innerText = 'Nice!';
+      particle.style.left = x + 'px';
+      particle.style.top = y + 'px';
+      gameContainer.appendChild(particle);
+      // Force reflow then apply transition for fade out and upward move
+      setTimeout(() => {
+        particle.style.opacity = 0;
+        particle.style.transform = 'translateY(-30px)';
+      }, 50);
+      setTimeout(() => {
+        gameContainer.removeChild(particle);
+      }, 850);
     }
 
     // Update game state
@@ -219,32 +255,31 @@
       bgPos += gameSpeed;
       gameContainer.style.backgroundPosition = `center ${bgPos}px`;
 
-      // Update car position based on input
+      // Update car center position based on input
       if (moveLeft) {
-        carPos.x -= 5;
-        if (carPos.x < 0) carPos.x = 0;
+        carCenter -= 5;
       }
       if (moveRight) {
-        carPos.x += 5;
-        if (carPos.x > containerWidth - car.clientWidth) {
-          carPos.x = containerWidth - car.clientWidth;
-        }
+        carCenter += 5;
       }
-      car.style.left = carPos.x + 'px';
+      // Clamp carCenter within allowed bounds
+      const halfCarWidth = car.clientWidth / 2;
+      if (carCenter < halfCarWidth) carCenter = halfCarWidth;
+      if (carCenter > containerWidth - halfCarWidth) carCenter = containerWidth - halfCarWidth;
+      updateCarPosition();
 
       // Update items positions and check collisions
       items.forEach(itemObj => {
         itemObj.y += itemObj.speed;
         if (itemObj.y > containerHeight) {
           // Recycle the item with a new non-overlapping position
-          let newX, newY = -40;
-          let attempts = 0;
+          let newX, attempts = 0;
           do {
-            newX = Math.random() * (containerWidth - 40);
+            newX = Math.random() * (containerWidth - 60);
             attempts++;
             if (attempts > 10) break;
-          } while (items.some(existing => existing !== itemObj && isOverlapping(newX, newY, existing)));
-          itemObj.y = -40;
+          } while (items.some(existing => existing !== itemObj && isOverlapping(newX, -60, existing)));
+          itemObj.y = -60;
           itemObj.x = newX;
           itemObj.element.style.left = itemObj.x + 'px';
         }
@@ -254,20 +289,22 @@
         if (isColliding(car, itemObj.element)) {
           if (itemObj.type === 'happy') {
             score++;
+            // Create particle effect near car
+            const carRect = car.getBoundingClientRect();
+            createParticle(carRect.left + carRect.width/2 - 20, carRect.top - 20);
           } else if (itemObj.type === 'angry') {
             hits++;
             obstacleSound.currentTime = 0;
             obstacleSound.play();
           }
-          // Reset the collided item
-          let newX, newY = -40;
-          let attempts = 0;
+          // Reset the collided item with new position
+          let newX, attempts = 0;
           do {
-            newX = Math.random() * (containerWidth - 40);
+            newX = Math.random() * (containerWidth - 60);
             attempts++;
             if (attempts > 10) break;
-          } while (items.some(existing => existing !== itemObj && isOverlapping(newX, newY, existing)));
-          itemObj.y = -40;
+          } while (items.some(existing => existing !== itemObj && isOverlapping(newX, -60, existing)));
+          itemObj.y = -60;
           itemObj.x = newX;
           itemObj.element.style.left = itemObj.x + 'px';
           itemObj.element.style.top = itemObj.y + 'px';
@@ -277,11 +314,11 @@
       // Update dashboard
       scoreBoard.innerText = `Points: ${score} | Hits: ${hits}`;
 
-      // Check win condition: score reaches 10
+      // Win condition: score reaches 10
       if (score >= 10) {
         endGame('win');
       }
-      // Check lose condition: hits exceed 5
+      // Lose condition: hits exceed 5
       if (hits > 5) {
         endGame('lose');
       }
@@ -302,7 +339,7 @@
     function endGame(result) {
       clearInterval(gameInterval);
       if (result === 'win') {
-        overlayText.innerText = 'You won, congrats!';
+        overlayText.innerText = 'you won!! you won a free nirvi coupon, which does absolutely nothing if used on her!!';
         winSound.currentTime = 0;
         winSound.play();
       } else {
@@ -320,8 +357,9 @@
       obstacleSound.pause();
       obstacleSound.currentTime = 0;
       
-      carPos = { x: (containerWidth - car.clientWidth) / 2, y: carPos.y };
-      car.style.left = carPos.x + 'px';
+      // Reset car center position
+      carCenter = containerWidth / 2;
+      updateCarPosition();
       spawnItems();
       gameOverlay.style.display = 'none';
       gameInterval = setInterval(updateGame, 20);
