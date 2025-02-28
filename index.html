@@ -40,12 +40,12 @@
     /* Car Style */
     .car {
       position: absolute;
-      width: 70px;
-      height: 140px;
+      width: 110px;
+      height: 220px;
       bottom: 10px;
       left: 50%;
-      transform: translateX(-50%) rotate(90deg);
-      background: url('hector.png') no-repeat center;
+      transform: translateX(-50%);
+      background: url('meetcar.png') no-repeat center;
       background-size: contain;
     }
     /* Item Base Style */
@@ -53,15 +53,9 @@
       position: absolute;
       width: 40px;
       height: 40px;
-      border-radius: 5px;
-    }
-    /* Happy (Bonus) - Yellow Box */
-    .happy {
-      background: #ff0;
-    }
-    /* Angry (Obstacle) - Red Box */
-    .angry {
-      background: #f00;
+      /* We'll set the background image dynamically */
+      background-size: contain;
+      background-repeat: no-repeat;
     }
     /* Overlay Styles */
     .overlay {
@@ -91,12 +85,31 @@
       border-radius: 5px;
       cursor: pointer;
     }
+    /* Mobile Controls */
+    .mobile-controls {
+      position: fixed;
+      bottom: 20px;
+      display: flex;
+      gap: 40px;
+      z-index: 1000;
+    }
+    .mobile-btn {
+      width: 60px;
+      height: 60px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      border: none;
+      background-color: transparent;
+    }
+    /* Hide mobile buttons on larger screens */
+    @media (min-width: 768px) {
+      .mobile-controls { display: none; }
+    }
   </style>
 </head>
 <body>
-  <div id="scoreBoard">
-    Points: 0 | Hits: 0
-  </div>
+  <div id="scoreBoard">Points: 0 | Hits: 0</div>
   <div id="gameContainer">
     <div class="car" id="car"></div>
     <!-- Overlay for Win/Lose -->
@@ -105,13 +118,19 @@
       <button id="playAgain">Play Again</button>
     </div>
   </div>
+
+  <!-- Mobile Arrow Buttons -->
+  <div class="mobile-controls">
+    <button id="leftBtn" class="mobile-btn" style="background-image: url('leftarrow.png');"></button>
+    <button id="rightBtn" class="mobile-btn" style="background-image: url('rightarrow.png');"></button>
+  </div>
   
-  <!-- Audio placeholders -->
-  <audio id="happySound">
-    <!-- Add your bonus sound file here, e.g. <source src="happy.mp3" type="audio/mpeg"> -->
+  <!-- Audio elements -->
+  <audio id="obstacleSound">
+    <source src="hitblock.mp3" type="audio/mpeg" />
   </audio>
-  <audio id="angrySound">
-    <!-- Add your obstacle sound file here, e.g. <source src="angry.mp3" type="audio/mpeg"> -->
+  <audio id="winSound">
+    <source src="careless_whisper.mp3" type="audio/mpeg" />
   </audio>
 
   <script>
@@ -121,8 +140,10 @@
     const gameOverlay = document.getElementById('gameOverlay');
     const overlayText = document.getElementById('overlayText');
     const playAgainBtn = document.getElementById('playAgain');
-    const happySound = document.getElementById('happySound');
-    const angrySound = document.getElementById('angrySound');
+    const leftBtn = document.getElementById('leftBtn');
+    const rightBtn = document.getElementById('rightBtn');
+    const obstacleSound = document.getElementById('obstacleSound');
+    const winSound = document.getElementById('winSound');
 
     let containerWidth = gameContainer.clientWidth;
     let containerHeight = gameContainer.clientHeight;
@@ -133,34 +154,53 @@
     let bgPos = 0;
     let carPos = { x: car.offsetLeft, y: car.offsetTop };
     let moveLeft = false, moveRight = false;
-    let items = []; // holds bonus & obstacle items
+    let items = []; // Array to hold bonus & obstacle items
 
-    // Update container dimensions on window resize
+    // Update container dimensions on resize
     window.addEventListener('resize', () => {
       containerWidth = gameContainer.clientWidth;
       containerHeight = gameContainer.clientHeight;
     });
 
-    // Create an item (happy or angry)
+    // Utility to check if two items overlap (used for item spawning)
+    function isOverlapping(newX, newY, existingItem) {
+      const buffer = 5; // extra gap between items
+      return !(
+        newX + 40 + buffer < existingItem.x ||
+        newX > existingItem.x + 40 + buffer ||
+        newY + 40 + buffer < existingItem.y ||
+        newY > existingItem.y + 40 + buffer
+      );
+    }
+
+    // Create an item (happy or angry) ensuring no overlap with existing items
     function createItem(type) {
       const item = document.createElement('div');
       item.classList.add('item');
       if (type === 'happy') {
-        item.classList.add('happy');
+        item.style.backgroundImage = "url('nirvihappy.png')";
       } else if (type === 'angry') {
-        item.classList.add('angry');
+        item.style.backgroundImage = "url('nirviangry.png')";
       }
-      const x = Math.random() * (containerWidth - 40);
-      const y = -40;
+      let x, y;
+      // Try random positions until there's no overlap with other items
+      let attempts = 0;
+      do {
+        x = Math.random() * (containerWidth - 40);
+        y = -40;
+        attempts++;
+        // Avoid infinite loop; if too many attempts, break out.
+        if (attempts > 10) break;
+      } while (items.some(existing => isOverlapping(x, y, existing)));
       item.style.left = x + 'px';
       item.style.top = y + 'px';
       gameContainer.appendChild(item);
       return { element: item, type: type, x: x, y: y, speed: gameSpeed };
     }
 
-    // Spawn initial items
+    // Spawn initial items (5 items total)
     function spawnItems() {
-      // Remove old items if any
+      // Remove old items
       items.forEach(itemObj => {
         if (itemObj.element.parentNode === gameContainer) {
           gameContainer.removeChild(itemObj.element);
@@ -175,7 +215,7 @@
 
     // Update game state
     function updateGame() {
-      // Move background to simulate forward movement
+      // Scroll background to simulate movement
       bgPos += gameSpeed;
       gameContainer.style.backgroundPosition = `center ${bgPos}px`;
 
@@ -196,9 +236,16 @@
       items.forEach(itemObj => {
         itemObj.y += itemObj.speed;
         if (itemObj.y > containerHeight) {
-          // Recycle the item to the top with a new position
+          // Recycle the item with a new non-overlapping position
+          let newX, newY = -40;
+          let attempts = 0;
+          do {
+            newX = Math.random() * (containerWidth - 40);
+            attempts++;
+            if (attempts > 10) break;
+          } while (items.some(existing => existing !== itemObj && isOverlapping(newX, newY, existing)));
           itemObj.y = -40;
-          itemObj.x = Math.random() * (containerWidth - 40);
+          itemObj.x = newX;
           itemObj.element.style.left = itemObj.x + 'px';
         }
         itemObj.element.style.top = itemObj.y + 'px';
@@ -207,35 +254,34 @@
         if (isColliding(car, itemObj.element)) {
           if (itemObj.type === 'happy') {
             score++;
-            // Play bonus sound
-            if(happySound) {
-              happySound.currentTime = 0;
-              happySound.play();
-            }
           } else if (itemObj.type === 'angry') {
             hits++;
-            // Play obstacle sound
-            if(angrySound) {
-              angrySound.currentTime = 0;
-              angrySound.play();
-            }
+            obstacleSound.currentTime = 0;
+            obstacleSound.play();
           }
           // Reset the collided item
+          let newX, newY = -40;
+          let attempts = 0;
+          do {
+            newX = Math.random() * (containerWidth - 40);
+            attempts++;
+            if (attempts > 10) break;
+          } while (items.some(existing => existing !== itemObj && isOverlapping(newX, newY, existing)));
           itemObj.y = -40;
-          itemObj.x = Math.random() * (containerWidth - 40);
+          itemObj.x = newX;
           itemObj.element.style.left = itemObj.x + 'px';
           itemObj.element.style.top = itemObj.y + 'px';
         }
       });
 
-      // Update scoreboard
+      // Update dashboard
       scoreBoard.innerText = `Points: ${score} | Hits: ${hits}`;
 
-      // Win condition: score reaches 10
+      // Check win condition: score reaches 10
       if (score >= 10) {
         endGame('win');
       }
-      // Lose condition: hits exceed 5
+      // Check lose condition: hits exceed 5
       if (hits > 5) {
         endGame('lose');
       }
@@ -255,8 +301,10 @@
 
     function endGame(result) {
       clearInterval(gameInterval);
-      if(result === 'win'){
+      if (result === 'win') {
         overlayText.innerText = 'You won, congrats!';
+        winSound.currentTime = 0;
+        winSound.play();
       } else {
         overlayText.innerText = 'You lost, now order cheesecake for her';
       }
@@ -266,6 +314,12 @@
     function resetGame() {
       score = 0;
       hits = 0;
+      // Stop any playing audio
+      winSound.pause();
+      winSound.currentTime = 0;
+      obstacleSound.pause();
+      obstacleSound.currentTime = 0;
+      
       carPos = { x: (containerWidth - car.clientWidth) / 2, y: carPos.y };
       car.style.left = carPos.x + 'px';
       spawnItems();
@@ -275,20 +329,30 @@
 
     // Keyboard controls
     document.addEventListener('keydown', (e) => {
-      if (e.key === "ArrowLeft") {
-        moveLeft = true;
-      }
-      if (e.key === "ArrowRight") {
-        moveRight = true;
-      }
+      if (e.key === "ArrowLeft") moveLeft = true;
+      if (e.key === "ArrowRight") moveRight = true;
     });
     document.addEventListener('keyup', (e) => {
-      if (e.key === "ArrowLeft") {
-        moveLeft = false;
-      }
-      if (e.key === "ArrowRight") {
-        moveRight = false;
-      }
+      if (e.key === "ArrowLeft") moveLeft = false;
+      if (e.key === "ArrowRight") moveRight = false;
+    });
+
+    // Mobile controls: touchstart and touchend for left/right buttons
+    leftBtn.addEventListener('touchstart', (e) => { 
+      e.preventDefault();
+      moveLeft = true;
+    });
+    leftBtn.addEventListener('touchend', (e) => { 
+      e.preventDefault();
+      moveLeft = false;
+    });
+    rightBtn.addEventListener('touchstart', (e) => { 
+      e.preventDefault();
+      moveRight = true;
+    });
+    rightBtn.addEventListener('touchend', (e) => { 
+      e.preventDefault();
+      moveRight = false;
     });
 
     playAgainBtn.addEventListener('click', resetGame);
