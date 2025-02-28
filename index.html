@@ -43,7 +43,6 @@
       width: 110px;
       height: 220px;
       bottom: 10px;
-      /* We'll position it using its center */
       background: url('meetcar.png') no-repeat center;
       background-size: contain;
     }
@@ -145,7 +144,7 @@
   </div>
   
   <!-- Audio elements -->
-  <!-- Replace the src value with your actual audio file paths -->
+  <!-- Replace the src values with your actual audio file paths -->
   <audio id="obstacleSound">
     <source src="hitblock.mp3" type="audio/mpeg" />
   </audio>
@@ -153,7 +152,7 @@
     <source src="careless_whisper.mp3" type="audio/mpeg" />
   </audio>
   <audio id="happyHitSound">
-    <source src="blah" type="audio/mpeg" />
+    <source src="yehaw.mp3" type="audio/mpeg" />
   </audio>
   <audio id="loseSound">
     <source src="losesound.mp3" type="audio/mpeg" />
@@ -186,7 +185,7 @@
     let moveLeft = false, moveRight = false;
     let items = []; // Holds bonus & obstacle items
 
-    const itemSize = 190; // Size for both happy and angry items
+    const itemSize = 190; // Both happy and angry items
 
     // Set initial car position based on carCenter
     function updateCarPosition() {
@@ -237,8 +236,7 @@
       return { element: item, type: type, x: x, y: y, speed: gameSpeed };
     }
 
-    // Spawn initial items
-    // Now spawn 3 items, with a higher chance for angry obstacles (70% chance).
+    // Spawn initial items with a higher chance for obstacles
     function spawnItems() {
       items.forEach(itemObj => {
         if (itemObj.element.parentNode === gameContainer) {
@@ -252,7 +250,7 @@
       }
     }
 
-    // Create a particle effect when a happy item is hit
+    // Particle effect for a bonus hit
     function createParticle(x, y) {
       const particle = document.createElement('div');
       particle.classList.add('particle');
@@ -269,19 +267,32 @@
       }, 850);
     }
 
-    // Shake the car element when an obstacle is hit
+    // Shake the car when an obstacle is hit
     function shakeCar() {
       car.classList.add('shake');
       setTimeout(() => car.classList.remove('shake'), 300);
     }
 
+    // Adjusted collision detection with a 10px margin for accuracy
+    function isColliding(a, b) {
+      const aRect = a.getBoundingClientRect();
+      const bRect = b.getBoundingClientRect();
+      const margin = 10; // Only register collision if they truly intersect
+      return !(
+        aRect.top + margin > bRect.bottom - margin ||
+        aRect.bottom - margin < bRect.top + margin ||
+        aRect.right - margin < bRect.left + margin ||
+        aRect.left + margin > bRect.right - margin
+      );
+    }
+
     // Update game state
     function updateGame() {
-      // Scroll background to simulate movement
+      // Scroll background for movement
       bgPos += gameSpeed;
       gameContainer.style.backgroundPosition = `center ${bgPos}px`;
 
-      // Update car center based on input
+      // Update car center position
       if (moveLeft) carCenter -= 5;
       if (moveRight) carCenter += 5;
       const halfCarWidth = car.clientWidth / 2;
@@ -289,11 +300,10 @@
       if (carCenter > containerWidth - halfCarWidth) carCenter = containerWidth - halfCarWidth;
       updateCarPosition();
 
-      // Update item positions and check for collisions
+      // Update items and check collisions
       items.forEach(itemObj => {
         itemObj.y += itemObj.speed;
         if (itemObj.y > containerHeight) {
-          // Recycle the item with a new non-overlapping position
           let newX, attempts = 0;
           do {
             newX = Math.random() * (containerWidth - itemSize);
@@ -310,19 +320,16 @@
         if (isColliding(car, itemObj.element)) {
           if (itemObj.type === 'happy') {
             score++;
-            // Play happy hit sound
             happyHitSound.currentTime = 0;
             happyHitSound.play();
-            // Create particle effect near the car
             const carRect = car.getBoundingClientRect();
             createParticle(carRect.left + carRect.width / 2 - 20, carRect.top - 20);
           } else if (itemObj.type === 'angry') {
             hits++;
             obstacleSound.currentTime = 0;
             obstacleSound.play();
-            shakeCar(); // Shake car on obstacle hit
+            shakeCar();
           }
-          // Reset the collided item
           let newX, attempts = 0;
           do {
             newX = Math.random() * (containerWidth - itemSize);
@@ -338,26 +345,9 @@
 
       scoreBoard.innerText = `Points: ${score} | Hits: ${hits}`;
 
-      // Win condition: score reaches 10
-      if (score >= 10) {
-        endGame('win');
-      }
-      // Lose condition: hits exceed 5
-      if (hits > 5) {
-        endGame('lose');
-      }
-    }
-
-    // Basic bounding box collision detection
-    function isColliding(a, b) {
-      const aRect = a.getBoundingClientRect();
-      const bRect = b.getBoundingClientRect();
-      return !(
-        aRect.top > bRect.bottom ||
-        aRect.bottom < bRect.top ||
-        aRect.right < bRect.left ||
-        aRect.left > bRect.right
-      );
+      // Check win/lose conditions
+      if (score >= 10) endGame('win');
+      if (hits > 5) endGame('lose');
     }
 
     function endGame(result) {
@@ -377,16 +367,10 @@
     function resetGame() {
       score = 0;
       hits = 0;
-      // Stop any playing audio
-      winSound.pause();
-      winSound.currentTime = 0;
-      obstacleSound.pause();
-      obstacleSound.currentTime = 0;
-      happyHitSound.pause();
-      happyHitSound.currentTime = 0;
-      loseSound.pause();
-      loseSound.currentTime = 0;
-      
+      winSound.pause(); winSound.currentTime = 0;
+      obstacleSound.pause(); obstacleSound.currentTime = 0;
+      happyHitSound.pause(); happyHitSound.currentTime = 0;
+      loseSound.pause(); loseSound.currentTime = 0;
       carCenter = containerWidth / 2;
       updateCarPosition();
       spawnItems();
@@ -404,27 +388,15 @@
       if (e.key === "ArrowRight") moveRight = false;
     });
 
-    // Mobile controls: touch events for left/right buttons
-    leftBtn.addEventListener('touchstart', (e) => { 
-      e.preventDefault();
-      moveLeft = true;
-    });
-    leftBtn.addEventListener('touchend', (e) => { 
-      e.preventDefault();
-      moveLeft = false;
-    });
-    rightBtn.addEventListener('touchstart', (e) => { 
-      e.preventDefault();
-      moveRight = true;
-    });
-    rightBtn.addEventListener('touchend', (e) => { 
-      e.preventDefault();
-      moveRight = false;
-    });
+    // Mobile controls
+    leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveLeft = true; });
+    leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); moveLeft = false; });
+    rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveRight = true; });
+    rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); moveRight = false; });
 
     playAgainBtn.addEventListener('click', resetGame);
 
-    // Start the game
+    // Start game
     spawnItems();
     gameInterval = setInterval(updateGame, 20);
   </script>
