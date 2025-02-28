@@ -37,7 +37,7 @@
       border: 3px solid #fff;
       border-radius: 10px;
     }
-    /* Car Style */
+    /* Car Style (default for desktop) */
     .car {
       position: absolute;
       width: 110px;
@@ -46,7 +46,7 @@
       background: url('meetcar.png') no-repeat center;
       background-size: contain;
     }
-    /* Item (Emoji) Base Style */
+    /* Item (Emoji) Base Style (default for desktop) */
     .item {
       position: absolute;
       width: 190px;
@@ -66,10 +66,10 @@
     }
     /* Shake animation for car on obstacle hit */
     @keyframes shake {
-      0% { transform: translateX(0); }
-      25% { transform: translateX(-10px); }
-      50% { transform: translateX(10px); }
-      75% { transform: translateX(-10px); }
+      0%   { transform: translateX(0); }
+      25%  { transform: translateX(-10px); }
+      50%  { transform: translateX(10px); }
+      75%  { transform: translateX(-10px); }
       100% { transform: translateX(0); }
     }
     .shake {
@@ -122,7 +122,20 @@
     }
     /* Hide mobile buttons on larger screens */
     @media (min-width: 768px) {
-      .mobile-controls { display: none; }
+      .mobile-controls {
+        display: none;
+      }
+    }
+    /* Responsive: scale down car & items on screens narrower than 600px */
+    @media (max-width: 600px) {
+      .car {
+        width: 90px;
+        height: 180px;
+      }
+      .item {
+        width: 150px;
+        height: 150px;
+      }
     }
   </style>
 </head>
@@ -179,78 +192,106 @@
     let gameSpeed = 2;
     let gameInterval;
     let bgPos = 0;
-    // Track the car's center so it can fully move to both edges.
+    // We'll track the car's center so it can move fully to the edges
     let carCenter = containerWidth / 2;
     // Movement flags
     let moveLeft = false, moveRight = false;
-    let items = []; // Holds bonus & obstacle items
+    let items = []; 
 
-    const itemSize = 190; // Both happy and angry items
-
-    // Set initial car position based on carCenter
-    function updateCarPosition() {
-      const carWidth = car.clientWidth;
-      car.style.left = (carCenter - carWidth / 2) + 'px';
+    // We'll re-check item/car sizes after the DOM is loaded and on resize
+    function getCarSize() {
+      return {
+        width: car.clientWidth,
+        height: car.clientHeight
+      };
     }
-    updateCarPosition();
+    function getItemSize() {
+      // We'll assume all items share the same size (happy or angry)
+      // so let's just measure one if it exists, or do a fallback
+      if (items.length > 0) {
+        return {
+          width: items[0].element.clientWidth,
+          height: items[0].element.clientHeight
+        };
+      }
+      // fallback if no items exist yet
+      return { width: 190, height: 190 };
+    }
 
-    // Update container dimensions on resize
+    // Position the car based on carCenter
+    function updateCarPosition() {
+      const carW = getCarSize().width;
+      car.style.left = (carCenter - carW / 2) + 'px';
+    }
+
+    // On window resize, recalc container & clamp car pos
     window.addEventListener('resize', () => {
       containerWidth = gameContainer.clientWidth;
       containerHeight = gameContainer.clientHeight;
-      carCenter = Math.min(Math.max(carCenter, car.clientWidth / 2), containerWidth - car.clientWidth / 2);
+      const carW = getCarSize().width;
+      // clamp car center
+      carCenter = Math.min(Math.max(carCenter, carW / 2), containerWidth - carW / 2);
       updateCarPosition();
     });
 
-    // Utility to check if two items overlap (for spawning)
-    function isOverlapping(newX, newY, existingItem) {
+    // Utility: check overlap in spawning
+    function isOverlapping(newX, newY, existingItem, itemW, itemH) {
       const buffer = 5;
       return !(
-        newX + itemSize + buffer < existingItem.x ||
-        newX > existingItem.x + itemSize + buffer ||
-        newY + itemSize + buffer < existingItem.y ||
-        newY > existingItem.y + itemSize + buffer
+        newX + itemW + buffer < existingItem.x ||
+        newX > existingItem.x + itemW + buffer ||
+        newY + itemH + buffer < existingItem.y ||
+        newY > existingItem.y + itemH + buffer
       );
     }
 
-    // Create an item (happy or angry) ensuring no overlap
+    // Create a single item
     function createItem(type) {
       const item = document.createElement('div');
       item.classList.add('item');
       if (type === 'happy') {
         item.style.backgroundImage = "url('nirvihappy.png')";
-      } else if (type === 'angry') {
+      } else {
         item.style.backgroundImage = "url('nirviangry.png')";
       }
+      // Append to measure size
+      gameContainer.appendChild(item);
+
+      const itemW = item.clientWidth;
+      const itemH = item.clientHeight;
+
       let x, y;
       let attempts = 0;
       do {
-        x = Math.random() * (containerWidth - itemSize);
-        y = -itemSize;
+        x = Math.random() * (containerWidth - itemW);
+        y = -itemH;
         attempts++;
         if (attempts > 10) break;
-      } while (items.some(existing => isOverlapping(x, y, existing)));
+      } while (items.some(existing => isOverlapping(x, y, existing, itemW, itemH)));
+
       item.style.left = x + 'px';
       item.style.top = y + 'px';
-      gameContainer.appendChild(item);
-      return { element: item, type: type, x: x, y: y, speed: gameSpeed };
+
+      return { element: item, type, x, y, speed: gameSpeed, w: itemW, h: itemH };
     }
 
-    // Spawn initial items with a higher chance for obstacles
+    // Spawn initial items (3 items) with 70% chance for 'angry'
     function spawnItems() {
-      items.forEach(itemObj => {
-        if (itemObj.element.parentNode === gameContainer) {
-          gameContainer.removeChild(itemObj.element);
+      // Clear old items
+      items.forEach(obj => {
+        if (obj.element.parentNode === gameContainer) {
+          gameContainer.removeChild(obj.element);
         }
       });
       items = [];
       for (let i = 0; i < 3; i++) {
         const type = Math.random() < 0.7 ? 'angry' : 'happy';
-        items.push(createItem(type));
+        const newItem = createItem(type);
+        items.push(newItem);
       }
     }
 
-    // Particle effect for a bonus hit
+    // Particle effect for bonus
     function createParticle(x, y) {
       const particle = document.createElement('div');
       particle.classList.add('particle');
@@ -263,21 +304,22 @@
         particle.style.transform = 'translateY(-30px)';
       }, 50);
       setTimeout(() => {
-        gameContainer.removeChild(particle);
+        if (particle.parentNode) {
+          gameContainer.removeChild(particle);
+        }
       }, 850);
     }
 
-    // Shake the car when an obstacle is hit
+    // Shake the car on obstacle hit
     function shakeCar() {
       car.classList.add('shake');
       setTimeout(() => car.classList.remove('shake'), 300);
     }
 
-    // Adjusted collision detection with a 10px margin for accuracy
-    function isColliding(a, b) {
-      const aRect = a.getBoundingClientRect();
-      const bRect = b.getBoundingClientRect();
-      const margin = 10; // Only register collision if they truly intersect
+    // Collision detection with margin
+    function isColliding(aRect, bRect) {
+      // Larger margin means you need more actual overlap
+      const margin = 25; 
       return !(
         aRect.top + margin > bRect.bottom - margin ||
         aRect.bottom - margin < bRect.top + margin ||
@@ -286,66 +328,68 @@
       );
     }
 
-    // Update game state
+    // Update game loop
     function updateGame() {
-      // Scroll background for movement
+      // Scroll background
       bgPos += gameSpeed;
       gameContainer.style.backgroundPosition = `center ${bgPos}px`;
 
-      // Update car center position
+      // Move car if needed
+      const carW = getCarSize().width;
       if (moveLeft) carCenter -= 5;
       if (moveRight) carCenter += 5;
-      const halfCarWidth = car.clientWidth / 2;
-      if (carCenter < halfCarWidth) carCenter = halfCarWidth;
-      if (carCenter > containerWidth - halfCarWidth) carCenter = containerWidth - halfCarWidth;
+      // clamp
+      if (carCenter < carW / 2) carCenter = carW / 2;
+      if (carCenter > containerWidth - carW / 2) carCenter = containerWidth - carW / 2;
       updateCarPosition();
 
-      // Update items and check collisions
-      items.forEach(itemObj => {
-        itemObj.y += itemObj.speed;
-        if (itemObj.y > containerHeight) {
-          let newX, attempts = 0;
+      // Update items
+      items.forEach(obj => {
+        obj.y += obj.speed;
+        const itemEl = obj.element;
+        if (obj.y > containerHeight) {
+          // Recycle
+          let attempts = 0;
           do {
-            newX = Math.random() * (containerWidth - itemSize);
+            obj.x = Math.random() * (containerWidth - obj.w);
+            obj.y = -obj.h;
             attempts++;
             if (attempts > 10) break;
-          } while (items.some(existing => existing !== itemObj && isOverlapping(newX, -itemSize, existing)));
-          itemObj.y = -itemSize;
-          itemObj.x = newX;
-          itemObj.element.style.left = itemObj.x + 'px';
+          } while (items.some(existing => existing !== obj && isOverlapping(obj.x, obj.y, existing, obj.w, obj.h)));
         }
-        itemObj.element.style.top = itemObj.y + 'px';
+        itemEl.style.left = obj.x + 'px';
+        itemEl.style.top = obj.y + 'px';
 
-        // Collision detection
-        if (isColliding(car, itemObj.element)) {
-          if (itemObj.type === 'happy') {
+        // Collision check
+        const carRect = car.getBoundingClientRect();
+        const itemRect = itemEl.getBoundingClientRect();
+        if (isColliding(carRect, itemRect)) {
+          if (obj.type === 'happy') {
             score++;
             happyHitSound.currentTime = 0;
             happyHitSound.play();
-            const carRect = car.getBoundingClientRect();
             createParticle(carRect.left + carRect.width / 2 - 20, carRect.top - 20);
-          } else if (itemObj.type === 'angry') {
+          } else {
             hits++;
             obstacleSound.currentTime = 0;
             obstacleSound.play();
             shakeCar();
           }
-          let newX, attempts = 0;
+          // Recycle the item after collision
+          let attempts = 0;
           do {
-            newX = Math.random() * (containerWidth - itemSize);
+            obj.x = Math.random() * (containerWidth - obj.w);
+            obj.y = -obj.h;
             attempts++;
             if (attempts > 10) break;
-          } while (items.some(existing => existing !== itemObj && isOverlapping(newX, -itemSize, existing)));
-          itemObj.y = -itemSize;
-          itemObj.x = newX;
-          itemObj.element.style.left = itemObj.x + 'px';
-          itemObj.element.style.top = itemObj.y + 'px';
+          } while (items.some(existing => existing !== obj && isOverlapping(obj.x, obj.y, existing, obj.w, obj.h)));
         }
       });
 
+      // Update scoreboard
       scoreBoard.innerText = `Points: ${score} | Hits: ${hits}`;
 
-      // Check win/lose conditions
+      // Check conditions
       if (score >= 10) endGame('win');
       if (hits > 5) endGame('lose');
     }
@@ -367,10 +411,12 @@
     function resetGame() {
       score = 0;
       hits = 0;
-      winSound.pause(); winSound.currentTime = 0;
-      obstacleSound.pause(); obstacleSound.currentTime = 0;
-      happyHitSound.pause(); happyHitSound.currentTime = 0;
-      loseSound.pause(); loseSound.currentTime = 0;
+      // Stop any playing audio
+      [winSound, obstacleSound, happyHitSound, loseSound].forEach(snd => {
+        snd.pause();
+        snd.currentTime = 0;
+      });
+      // Reset car center
       carCenter = containerWidth / 2;
       updateCarPosition();
       spawnItems();
@@ -378,7 +424,7 @@
       gameInterval = setInterval(updateGame, 20);
     }
 
-    // Keyboard controls
+    // Controls
     document.addEventListener('keydown', (e) => {
       if (e.key === "ArrowLeft") moveLeft = true;
       if (e.key === "ArrowRight") moveRight = true;
@@ -388,16 +434,16 @@
       if (e.key === "ArrowRight") moveRight = false;
     });
 
-    // Mobile controls
     leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveLeft = true; });
-    leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); moveLeft = false; });
-    rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveRight = true; });
-    rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); moveRight = false; });
+    leftBtn.addEventListener('touchend',   (e) => { e.preventDefault(); moveLeft = false; });
+    rightBtn.addEventListener('touchstart',(e) => { e.preventDefault(); moveRight = true; });
+    rightBtn.addEventListener('touchend',  (e) => { e.preventDefault(); moveRight = false; });
 
     playAgainBtn.addEventListener('click', resetGame);
 
-    // Start game
+    // Init
     spawnItems();
+    updateCarPosition();
     gameInterval = setInterval(updateGame, 20);
   </script>
 </body>
