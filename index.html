@@ -206,8 +206,8 @@
       let x, y;
       let attempts = 0;
       do {
-        x = Math.random() * (containerWidth - 60);
-        y = -60; // start above view
+        x = Math.random() * (containerWidth - 100);
+        y = -100; // start above view
         attempts++;
         if (attempts > 10) break;
       } while (items.some(existing => isOverlapping(x, y, existing)));
