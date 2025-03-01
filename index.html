@@ -80,17 +80,17 @@ align-items: center;
       ITEM COLLIDER - smaller box for actual collision detection
       Adjust top/left/width/height to reduce the bounding box.
     */
-    .item-collider {
-      position: absolute;
-      top: 15%;
-      left: 15%;
-      width: 70%;
-      height: 70%;
-      /*
-        Uncomment for debugging collisions:
-        background: rgba(255, 0, 0, 0.3);
-      */
-    }
+.item-collider {
+  position: absolute;
+  /* Center it and shrink it down significantly */
+  top: 30%;
+  left: 30%;
+  width: 40%;
+  height: 40%;
+  /* For debugging collisions (optional):
+     background: rgba(255, 0, 0, 0.3);
+  */
+}
 
     /* PARTICLE EFFECT */
     .particle {
