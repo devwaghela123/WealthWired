@@ -64,18 +64,22 @@
     }
 
     /* ITEM (outer container) - visually big */
-    .item {
-      position: absolute;
+.item {
+    position: absolute;
+    top: 50%;          /* Center vertically */
+    left: 50%;         /* Center horizontally */
+    transform: translate(-50%, -50%); /* Adjust position to truly center */
+    
+    background-size: contain;
+    background-repeat: no-repeat;
+    width: auto;       /* Adjust width to fit the image */
+    height: auto;      /* Adjust height to fit the image */
+    
+    display: flex;     /* Use flexbox for alignment */
+    align-items: center; /* Center items vertically */
+    justify-content: center; /* Center items horizontally */
+}
 
-      background-size: contain;
-      background-repeat: no-repeat;
-  top: 25%;    /* Adjusted */
-  left: 25%;   /* Adjusted */
-  width: 50%;  /* Adjusted to make the collider smaller */
-  height: 50%; /* Adjusted to make the collider smaller */
-align-items: center;
-    }
-    /*
       ITEM COLLIDER - smaller box for actual collision detection
       Adjust top/left/width/height to reduce the bounding box.
     */
